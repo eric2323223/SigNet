@@ -133,8 +133,12 @@ def genTruePairs(list):
             pairs.append([list[i], list[j]])
     return pairs
 
-def genFalsePairs(list):
-
+def genFalsePairs(glist, flist):
+    pairs = []
+    for i in range(0, len(glist)):
+        for j in range(0, len(flist)):
+            pairs.append([glist[i], flist[j]])
+    return pairs
 
 def getData():
     X1 = []
@@ -148,9 +152,34 @@ def getData():
     path = Path(__file__).resolve().parent.parent.parent.joinpath("DL_data/trainingSet/OfflineSignatures/chinese/trainingSet")
     signatureDirs = os.listdir(path)
     for dir in signatureDirs:
-        gSignatureFiles = os.listdir(Path.joinpath(path, dir, 'geniune'))
+        gSignatureFiles = os.listdir(Path.joinpath(path, dir, 'genuine'))
         fSignatureFiles = os.listdir(path.joinpath(path, dir, 'forgeries'))
-
+        for pair in genTruePairs(gSignatureFiles):
+            # print(pair)
+            img1 = preprocessImage(Path.joinpath(path, dir, 'genuine', pair[0]))
+            img2 = preprocessImage(Path.joinpath(path, dir, 'genuine', pair[1]))
+            # img.show()
+            # image = img.load_img(path, target_size=(120, 300))
+            # x = img.img_to_array(cropped)
+            x1 = np.array(img1)[:,:,0:1]
+            x2 = np.array(img2)[:,:,0:1]
+            # print(x.shape)
+            X1.append(x1)
+            X2.append(x2)
+            Y.append(1)
+        for pair in genFalsePairs(gSignatureFiles, fSignatureFiles):
+            # print(pair)
+            img1 = preprocessImage(Path.joinpath(path, dir, 'genuine', pair[0]))
+            img2 = preprocessImage(Path.joinpath(path, dir, 'forgeries', pair[1]))
+            # img.show()
+            # image = img.load_img(path, target_size=(120, 300))
+            # x = img.img_to_array(cropped)
+            x1 = np.array(img1)[:, :, 0:1]
+            x2 = np.array(img2)[:, :, 0:1]
+            # print(x.shape)
+            X1.append(x1)
+            X2.append(x2)
+            Y.append(0)
 
     # gfiles = getFiles(path1)
     # ffiles = getFiles(path2)
@@ -226,6 +255,7 @@ def main():
     model.compile(loss=contrastive_loss, optimizer=rms)
 
     X1, X2 ,Y = getData()
+    print(len(Y))
 
     model.fit(x=[X1, X2], y=Y)
     
