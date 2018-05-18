@@ -29,6 +29,7 @@ from pathlib import Path
 # import matplotlib.pyplot as plt
 from PIL import Image
 import itertools
+from keras.models import model_from_json
 # import matplotlib.image as mpimg
 
 random.seed(1337)
@@ -256,7 +257,7 @@ def getData():
     # plt.show()
 
 
-def main():
+def train(saveModel=True):
     batch_sz = 128
     nsamples = 276
     # img_height = 155
@@ -307,60 +308,37 @@ def main():
     X1, X2, Y = getData2()
     print(len(Y))
 
-    model.fit(x=[X1, X2], y=Y)
+    model.fit(x=[X1, X2], y=Y, epochs=8, validation_split=0.2)
+    # serialize model to JSON
+
+    if(saveModel == True):
+        model_json = model.to_json()
+        with open("mysignet.json", "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        model.save_weights("mysignet.h5")
+        print("Saved model to disk")
 
     # display model
 
+def predict(file1, file2):
+    json_file = open('mysignet.json', 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    loaded_model.load_weights("mysignet.h5")
+    print("Loaded model from disk")
+    sig1 = loadImage(file1)
+    sig2 = loadImage(file2)
+    prediction = loaded_model.predict([np.array([sig1]), np.array([sig2])])
+    print(prediction)
 
-#    plot(model, show_shapes=True)
-#    sys.exit()
-
-# callbacks
-#     fname = os.path.join('/home/sounak/Documents/' , 'weights_'+str(dataset)+'.hdf5')
-# #     fname = '/home/sounak/Desktop/weights_GPDS300.hdf5'
-#     checkpointer = ModelCheckpoint(filepath=fname, verbose=1, save_best_only=True)
-#    tbpointer = TensorBoard(log_dir='/home/adutta/Desktop/Graph', histogram_freq=0,
-#          write_graph=True, write_images=True)
-# print int(datagen.samples_per_valid)
-# print datagen.samples_per_train
-# print int(datagen.samples_per_valid)
-# print int(datagen.samples_per_test)
-# sys.exit()
-# train model
-# model.fit_generator(generator=datagen.next_train(), samples_per_epoch=datagen.samples_per_train, nb_epoch=nb_epoch,
-#                     validation_data=datagen.next_valid(), nb_val_samples=int(datagen.samples_per_valid))   # KERAS 1
-
-# model.fit_generator(generator=datagen.next_train(), steps_per_epoch=960, epochs=nb_epoch,
-#                     validation_data=datagen.next_valid(), validation_steps=120, callbacks=[checkpointer])  # KERAS 2
-# load the best weights for test
-# model.load_weights(fname)
-# print (fname)
-# print ('Loading the best weights for testing done...')
-
-
-#    tr_pred = model.predict_generator(generator=datagen.next_train(), val_samples=int(datagen.samples_per_train))
-#     te_pred = model.predict_generator(generator=datagen.next_test(), steps=120)
-#
-# #    tr_acc = compute_accuracy_roc(tr_pred, datagen.train_labels)
-#     te_acc = compute_accuracy_roc(te_pred, datagen.test_labels)
-#
-# #    print('* Accuracy on training set: %0.2 f%%' % (100 * tr_acc))
-#     print('* Accuracy on test set: %0.2f%%' % (100 * te_acc))
 
 # Main Function
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description='Signature Verification')
-    # # required training parameters
-    # parser.add_argument('--dataset', '-ds', action='store', type=str, required=True,
-    #               help='Please mention the database.')
-    # # required tensorflow parameters
-    # parser.add_argument('--epoch', '-e', action='store', type=int, default=20,
-    #               help='The maximum number of iterations. Default: 20')
-    # parser.add_argument('--num_samples', '-ns', action='store', type=int, default=276,
-    #               help='The number of samples. Default: 276')
-    # parser.add_argument('--batch_size', '-bs', action='store', type=int, default=138,
-    #               help='The mini batch size. Default: 138')
-    # args = parser.parse_args()
-    # print args.dataset, args.epoch, args.num_samples, args.batch_size
-    #    sys.exit()
-    main()
+
+    # train()
+    file1 = 'C:/Users/eric/workspace/DL_data/signatures/001/001_1.png'
+    file2 = 'C:/Users/eric/workspace/DL_data/signatures/001/0113001_4.png'
+    predict(file1, file2)
